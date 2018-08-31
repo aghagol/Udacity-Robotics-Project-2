@@ -90,6 +90,18 @@ def handle_calculate_IK(req):
         R0_3 = T0_1[:3, :3] * T1_2[:3, :3] * T2_3[:3, :3]
         ###
 
+        # Compensate for rotation discrepancy between DH parameters and Gazebo
+        R_z = Matrix([[     cos(pi), -sin(pi),          0, 0],
+                      [     sin(pi),  cos(pi),          0, 0],
+                      [           0,        0,          1, 0],
+                      [           0,        0,          0, 1]])
+
+        R_y = Matrix([[  cos(-pi/2),        0, sin(-pi/2), 0],
+                      [           0,        1,          0, 0],
+                      [ -sin(-pi/2),        0, cos(-pi/2), 0],
+                      [           0,        0,          0, 1]])
+        R_corr = R_z * R_y
+
         # Initialize service response
         joint_trajectory_list = []
         for x in xrange(0, len(req.poses)):
@@ -109,18 +121,7 @@ def handle_calculate_IK(req):
 
             ### Your IK code here
             # Compensate for rotation discrepancy between DH parameters and Gazebo
-            R_z = Matrix([[     cos(pi), -sin(pi),          0, 0],
-                          [     sin(pi),  cos(pi),          0, 0],
-                          [           0,        0,          1, 0],
-                          [           0,        0,          0, 1]])
-
-            R_y = Matrix([[  cos(-pi/2),        0, sin(-pi/2), 0],
-                          [           0,        1,          0, 0],
-                          [ -sin(-pi/2),        0, cos(-pi/2), 0],
-                          [           0,        0,          0, 1]])
-            R_corr = R_z * R_y
-
-            T_total = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_G * R_corr
+            # --> move outside of loop for efficiency
 
             # Calculate joint angles using Geometric IK method
             R_roll  = Matrix([[           1,         0,          0],
